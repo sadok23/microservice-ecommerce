@@ -4,6 +4,7 @@ import com.ecommerce.order_service.client.CatalogClient;
 import com.ecommerce.order_service.client.ProductResponse;
 import com.ecommerce.order_service.domain.Order;
 import com.ecommerce.order_service.domain.OrderItem;
+import com.ecommerce.order_service.producer.OrderEventPublisher;
 import com.ecommerce.order_service.repository.OrderRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,10 +20,12 @@ public class OrderController {
 
     private final OrderRepository repository;
     private final CatalogClient catalogClient;
+    private final OrderEventPublisher orderEventPublisher;
 
-    public OrderController(OrderRepository repository, CatalogClient catalogClient) {
+    public OrderController(OrderRepository repository, CatalogClient catalogClient, OrderEventPublisher orderEventPublisher) {
         this.repository = repository;
         this.catalogClient = catalogClient;
+        this.orderEventPublisher = orderEventPublisher;
     }
 
     @GetMapping
@@ -54,6 +57,12 @@ public Order create(@RequestBody Order order, @AuthenticationPrincipal Jwt jwt) 
     }
 
     order.setTotalAmount(total);
-    return repository.save(order);
+    Order saved = repository.save(order);
+
+    // Fire-and-forget: notify inventory to reserve stock. Non-blocking (async) Kafka send,
+    // so the HTTP response isn't held up waiting for inventory to process the order.
+    orderEventPublisher.publishOrderCreated(saved.getId(), saved.getItems());
+
+    return saved;
 }
 }
