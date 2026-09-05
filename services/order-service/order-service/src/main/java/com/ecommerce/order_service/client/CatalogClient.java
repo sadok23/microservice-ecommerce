@@ -3,6 +3,7 @@ package com.ecommerce.order_service.client;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @Component
@@ -15,12 +16,15 @@ public class CatalogClient {
 
     public ProductResponse getProduct(Long productId) {
         String token = extractToken();
-
-        return restClient.get()
-                .uri("/api/products/{id}", productId)
-                .headers(headers -> headers.setBearerAuth(token))
-                .retrieve()
-                .body(ProductResponse.class);
+        try {
+            return restClient.get()
+                    .uri("/api/products/{id}", productId)
+                    .headers(headers -> headers.setBearerAuth(token))
+                    .retrieve()
+                    .body(ProductResponse.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new IllegalArgumentException("Product " + productId + " does not exist");
+        }
     }
 
     private String extractToken() {
