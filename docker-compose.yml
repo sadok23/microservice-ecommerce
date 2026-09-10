@@ -29,7 +29,7 @@ services:
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import
       - keycloak-data:/opt/keycloak/data
-
+      - ./infra/keycloak/themes/ecommerce-theme:/opt/keycloak/themes/ecommerce-theme
   kafka:
     image: apache/kafka:3.8.0
     container_name: ecommerce-kafka

@@ -65,4 +65,7 @@ public Order create(@RequestBody Order order, @AuthenticationPrincipal Jwt jwt) 
 
     return saved;
 }
+
+    /** Request body for PUT /api/orders/{id}/status. */
+    public record OrderStatusRequest(String status) {}
 }
